@@ -1,32 +1,133 @@
-# Land-Use Land-Cover Classification Singrauli 
+# 🌍 Sentinel-AI: Singrauli LULC Classification
 
-This repository contains the code and data for land-use land-cover classification of the Singrauli district.
+![Singrauli LULC](https://img.shields.io/badge/Project-LULC%20Classification-green) ![GEE](https://img.shields.io/badge/GEE-Sentinel--2-blue) ![Python](https://img.shields.io/badge/Python-3.8%2B-blue) ![TensorFlow](https://img.shields.io/badge/ML-TensorFlow%20%7C%20Optuna-orange)
 
-## ️ Google Earth Engine (GEE)
+Welcome to the **Singrauli Land-Use Land-Cover (LULC) Classification** repository! This project leverages the power of Google Earth Engine (GEE), Classical Machine Learning, and Deep Convolutional Neural Networks (CNNs) to analyze and classify the landscape of the Singrauli district using Sentinel-2 satellite imagery.
 
-This folder contains the [JavaScript code](GEE/GEE_Script.js) exported from GEE. It exports the coordinates of the training dataset, the base image, and the [Random Forest classified image](GEE/Singrauli_LULC_Classified_RF_2024.tif).
+## 📖 Table of Contents
+- [Project Overview](#-project-overview)
+- [Repository Structure](#-repository-structure)
+- [Getting Started](#-getting-started)
+- [Data Flow](#-data-flow)
+- [Methodology](#-methodology)
+  - [Google Earth Engine](#1-google-earth-engine-gee)
+  - [Classical Machine Learning](#2-classical-machine-learning)
+  - [Deep Learning (CNN)](#3-deep-learning-cnn)
+- [Accuracy Assessment](#-accuracy-assessment)
+- [Contributors](#-contributors)
 
-##  Raw Data
+---
 
-This folder contains the raw data files directly exported from GEE.
+## 🛰️ Project Overview
 
-[Raw Data](Raw_Data)
+Singrauli is a region known for its rich coal reserves and power plants. Monitoring its Land Use and Land Cover is crucial for environmental assessment and planning. This project aims to accurately classify the region into 6 distinct classes:
+1. **Water** 💧
+2. **Agriculture** 🌾
+3. **Settlement** 🏙️
+4. **Mining** ⛏️
+5. **Barren/Scrubland** 🍂
+6. **Forest** 🌳
 
-##  Tuned Data
+We employ a multi-modal approach, comparing traditional Random Forest classifiers on pixel data against patch-based CNN models for spatial context awareness.
 
-This folder contains the train and test CSV files, which are the original raw data separated for use in the Classical ML script.
+---
 
-[Tuned Data](Tuned_Data)
+## 📂 Repository Structure
 
-##  Classical Machine Learning (ML)
+Here's a quick tour of the codebase:
 
-This folder contains the code for classical machine learning models. The [classical ML](Classical_ML/Optuna_autosampler_Singrauli.ipynb) file performs hyperparameter tuning to find the best model. The [results](Classical_ML/test_results.xlsx) file contains the confusion matrices for all the models.
+```text
+.
+├── 📁 Accuracy_Assessment  # Validation scripts and reports
+│   ├── 📄 Accuracy_assessment.ipynb
+│   ├── 📄 model_accuracy_report.docx
+│   └── 📁 Thematic_images/
+├── 📁 CNN_Model            # Deep Learning (TensorFlow/Keras)
+│   ├── 📁 CNN_Training/    # Model architecture and training loop
+│   └── 📁 CNN_Prediction/  # Inference generation scripts
+├── 📁 Classical_ML         # Scikit-learn & Optuna tuning
+│   ├── 📄 Optuna_autosampler_Singrauli.ipynb
+│   └── 📄 test_results.xlsx
+├── 📁 GEE                  # Google Earth Engine Assets
+│   ├── 📄 GEE_Script.js    # JavaScript code for GEE Code Editor
+│   └── 🖼️ Singrauli_LULC_Classified_RF_2024.tif
+├── 📁 Raw_Data             # Exports directly from GEE
+├── 📁 Tuned_Data           # Preprocessed Train/Test splits
+└── 📄 README.md            # You are here!
+```
 
-##  Convolutional Neural Network (CNN) Model
+---
 
-This folder contains the code for the CNN model. You can change the patch size from 10x10 to 64x64. The [training notebook](CNN_Model/CNN_Training/cnn-training.ipynb) prepares the image patches and generates the confusion matrix. The [prediction notebook](CNN_Model/CNN_Prediction/cnn-prediction.ipynb) generates the classified image.
+## 🚀 Getting Started
 
-##  Accuracy Assessment
+### Prerequisites
+To run the notebooks locally, you'll need Python installed with the following libraries:
+*   `numpy`, `pandas`, `matplotlib`, `seaborn`
+*   `scikit-learn`
+*   `tensorflow` (for CNN)
+*   `optuna` (for hyperparameter tuning)
+*   `rasterio` (for geospatial image handling)
 
-This folder contains the [script](Accuracy-Assessment/Accuracy_assessment.ipynb) that takes [thematic images](Accuracy-Assessment/Thematic_images) from Random Forest and CNN models as input and generates a model [accuracy report](Accuracy-Assessment/model_accuracy_report.docx).
+### Installation
+Clone this repository:
+```bash
+git clone https://github.com/your-username/Singrauli-LULC.git
+cd Singrauli-LULC
+```
 
+---
+
+## 🔄 Data Flow
+
+1.  **Acquisition**: Sentinel-2 data (2024-2025) is processed in GEE. Spectral indices (NDVI, NDWI, NDBI) and Texture features are added.
+2.  **Export**: Labeled pixel data is exported to `Raw_Data/`.
+3.  **Preprocessing**: Data is split into `train.csv` and `test.csv` in `Tuned_Data/`.
+4.  **Modeling**:
+    *   **Classical ML**: Uses `train.csv` to tune models via Optuna.
+    *   **CNN**: Uses image patches prepared from the GEE export.
+5.  **Assessment**: The output maps are validated in `Accuracy_Assessment/`.
+
+---
+
+## 🔬 Methodology
+
+### 1. Google Earth Engine (GEE)
+Located in `GEE/GEE_Script.js`, this script is the backbone of our data pipeline.
+*   **Source**: Sentinel-2 Surface Reflectance.
+*   **Features**: Bands (B2, B3, B4, B8, B11, B12) + Indices + GLCM Texture.
+*   **Classifier**: A baseline Random Forest model runs directly in GEE.
+*   **Output**: Generates the `Singrauli_LULC_Classified_RF_2024.tif`.
+
+### 2. Classical Machine Learning
+Located in `Classical_ML/`.
+*   **Goal**: To find the optimal hyperparameters for pixel-based classification.
+*   **Tools**: Uses **Optuna** for automated hyperparameter optimization.
+*   **Results**: Confusion matrices and metrics are stored in `test_results.xlsx`.
+
+### 3. Deep Learning (CNN)
+Located in `CNN_Model/`.
+*   **Architecture**: A Sequential CNN model designed for patch-based classification.
+    *   3 Convolutional Blocks (Conv2D -> BatchNorm -> MaxPool).
+    *   Dense Layers with Dropout for regularization.
+*   **Input**: 64x64 pixel patches with 11 spectral/texture bands.
+*   **Performance**: Achieves high accuracy (~99%) by leveraging spatial context.
+
+---
+
+## 📊 Accuracy Assessment
+
+The `Accuracy_Assessment/` folder contains the final verdict.
+*   **Script**: `Accuracy_assessment.ipynb` compares the thematic maps generated by the RF and CNN models.
+*   **Report**: `model_accuracy_report.docx` provides detailed metrics (Kappa coefficient, F1-score, Precision, Recall).
+
+---
+
+## 👥 Contributors
+
+This project is a collaborative effort to bring advanced AI techniques to geospatial analysis.
+
+*   *Data Science & Modeling*
+*   *Remote Sensing Specialist*
+
+---
+*Happy Mapping!* 🗺️
