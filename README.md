@@ -1,4 +1,4 @@
-# 🌍 Sentinel-AI: Singrauli LULC Classification
+# Singrauli LULC Classification
 
 ![Singrauli LULC](https://img.shields.io/badge/Project-LULC%20Classification-green) ![GEE](https://img.shields.io/badge/GEE-Sentinel--2-blue) ![Python](https://img.shields.io/badge/Python-3.8%2B-blue) ![TensorFlow](https://img.shields.io/badge/ML-TensorFlow%20%7C%20Optuna-orange)
 
