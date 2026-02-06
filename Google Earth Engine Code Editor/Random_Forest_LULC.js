@@ -1792,31 +1792,19 @@ var boundary = ee.FeatureCollection("projects/onyx-seeker-461009-i4/assets/gadm4
             })]);
 
 
-// ====================================================================================
-// SCRIPT CONFIGURATION
-// ====================================================================================
-
-// Sentinel-2 bands (SCL needed for cloud masking)
 var S2_BANDS = ['B2', 'B3', 'B4', 'B8', 'B11', 'B12', 'SCL'];
 
-// Bands used for Random Forest classification
 var BANDS_FOR_CLASSIFICATION = [
   'B2', 'B3', 'B4', 'B8', 'B11', 'B12',
   'NDVI', 'NDWI', 'NDBI', 'texture'
 ];
 
-// Visualization parameters
 var TRUE_COLOR_VIS_PARAMS = {
   bands: ['B4', 'B3', 'B2'],
   min: 0,
   max: 3000
 };
 
-// ====================================================================================
-// STEP 1: AOI
-// ====================================================================================
-
-// Boundary FeatureCollection must be imported as "boundary"
 var aoi = boundary.filter(
   ee.Filter.and(
     ee.Filter.eq('NAME_2', 'Singrauli'),
@@ -1826,10 +1814,6 @@ var aoi = boundary.filter(
 
 Map.centerObject(aoi, 10);
 Map.addLayer(aoi, {color: 'red'}, 'AOI');
-
-// ====================================================================================
-// STEP 2: SENTINEL-2 CLOUD FREE COMPOSITE
-// ====================================================================================
 
 function maskS2clouds(image) {
   var scl = image.select('SCL');
@@ -1852,29 +1836,16 @@ var baseImage = s2.median().clip(aoi);
 
 Map.addLayer(baseImage, TRUE_COLOR_VIS_PARAMS, 'Sentinel-2 Composite');
 
-// ====================================================================================
-// STEP 3: FEATURE ENGINEERING
-// ====================================================================================
-
 var ndvi = baseImage.normalizedDifference(['B8', 'B4']).rename('NDVI');
 var ndwi = baseImage.normalizedDifference(['B3', 'B8']).rename('NDWI');
 var ndbi = baseImage.normalizedDifference(['B11', 'B8']).rename('NDBI');
 
-// Texture (GLCM)
 var nirInt = baseImage.select('B8').toUint16();
 var texture = nirInt.glcmTexture({size: 4})
   .select('B8_contrast')
   .rename('texture');
 
-// Final image
 var finalImage = baseImage.addBands([ndvi, ndwi, ndbi, texture]);
-
-// ====================================================================================
-// STEP 4: TRAINING POLYGONS WITH CLASS IDS
-// ====================================================================================
-
-// Class IDs
-// 1 Water | 2 Agriculture | 3 Settlement | 4 Mining | 5 Barren | 6 Forest
 
 var forest = Forest.map(function(f) { return f.set('class', 6); });
 var water = Water.map(function(f) { return f.set('class', 1); });
@@ -1887,14 +1858,9 @@ var allPolygons = ee.FeatureCollection([
   forest, water, agriculture, settlement, mining, barren
 ]).flatten();
 
-// Train / Test split
 var polygonsRandom = allPolygons.randomColumn('random');
 var trainingSet = polygonsRandom.filter(ee.Filter.lt('random', 0.6));
 var testingSet  = polygonsRandom.filter(ee.Filter.gte('random', 0.6));
-
-// ====================================================================================
-// STEP 5: RANDOM FOREST TRAINING
-// ====================================================================================
 
 var trainingData = finalImage
   .select(BANDS_FOR_CLASSIFICATION)
@@ -1910,10 +1876,6 @@ var classifier = ee.Classifier.smileRandomForest(100).train({
   classProperty: 'class',
   inputProperties: BANDS_FOR_CLASSIFICATION
 });
-
-// ====================================================================================
-// STEP 6: CLASSIFICATION & ACCURACY
-// ====================================================================================
 
 var classifiedImage = finalImage.classify(classifier);
 
@@ -1932,17 +1894,13 @@ var errorMatrix = validated.errorMatrix('class', 'classification');
 print('Confusion Matrix', errorMatrix);
 print('Overall Accuracy', errorMatrix.accuracy());
 
-// ====================================================================================
-// STEP 7: VISUALIZATION
-// ====================================================================================
-
 var lulcPalette = [
-  '0000FF', // 1 Water
-  'E6E600', // 2 Agriculture
-  'FF0000', // 3 Settlement
-  '000000', // 4 Mining
-  'C2B280', // 5 Barren
-  '006400'  // 6 Forest
+  '0000FF',
+  'E6E600',
+  'FF0000',
+  '000000',
+  'C2B280',
+  '006400'
 ];
 
 Map.addLayer(
@@ -1950,49 +1908,6 @@ Map.addLayer(
   {min: 1, max: 6, palette: lulcPalette},
   'LULC - Random Forest'
 );
-
-// ====================================================================================
-// STEP 8: CLASS-WISE AREA & PERCENTAGE
-// ====================================================================================
-
-var pixelArea = ee.Image.pixelArea().divide(1e6); // sq km
-var areaImage = pixelArea.addBands(classifiedImage);
-
-var areaStats = areaImage.reduceRegion({
-  reducer: ee.Reducer.sum().group({
-    groupField: 1,
-    groupName: 'class'
-  }),
-  geometry: aoi,
-  scale: 10,
-  maxPixels: 1e13
-});
-
-var classAreas = ee.List(areaStats.get('groups'));
-
-var totalArea = ee.Number(
-  classAreas
-    .map(function(item) {
-      return ee.Dictionary(item).get('sum');
-    })
-    .reduce(ee.Reducer.sum())
-);
-
-var areaTable = classAreas.map(function(item) {
-  item = ee.Dictionary(item);
-  var area = ee.Number(item.get('sum'));
-  return ee.Dictionary({
-    class: item.get('class'),
-    area_sqkm: area,
-    percentage: area.divide(totalArea).multiply(100)
-  });
-});
-
-print('Class-wise Area (sq.km) & Percentage (%)', areaTable);
-
-// ====================================================================================
-// STEP 9: MAP LEGEND
-// ====================================================================================
 
 var legend = ui.Panel({
   style: {
@@ -2047,10 +1962,6 @@ for (var i = 0; i < legendItems.length; i++) {
 }
 
 ui.root.add(legend);
-
-// ====================================================================================
-// STEP 10: EXPORT CLASSIFIED IMAGE
-// ====================================================================================
 
 Export.image.toDrive({
   image: classifiedImage.toInt(),
