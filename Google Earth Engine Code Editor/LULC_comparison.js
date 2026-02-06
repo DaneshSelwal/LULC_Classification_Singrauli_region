@@ -1,3 +1,95 @@
+Scripts Docs Assets
+Cloud Assets
+1516
+Singrauli_CNN_CENTER_PIXEL_15
+Singrauli_CNN_CENTER_PIXEL_9
+Singrauli_CNN_Classified_Map_FINAL
+Singrauli_CNN_L_Batched
+Singrauli_Clipped_RGB
+Singrauli_LULC_RF_2024
+Singrauli_LULC_RF_Sentinel2_2024
+gadm40_IND_0
+gadm40_IND_1
+gadm40_IND_2
+gadm40_IND_3
+Legacy Assets
+This folder is empty.
+MP/LULC_RF
+
+Inspector Console Tasks
+Use print(...) to write to this console.
+LULC MODEL COMPARISON - Singrauli District
+Total Study Area:
+5799.311415995825
+km²
+Common Analysis Area:
+5786.412723712125
+km²
+CNN-15 Total Area:
+5786.412723712377
+km²
+CNN-9 Total Area:
+5786.412723711885
+km²
+Random Forest Total Area:
+5786.412723712121
+km²
+Class-wise Comparison:
+FeatureCollection (18 elements, 0 columns)
+LULC Area Comparison (km²)
+CNN-15
+CNN-9
+Random Forest
+Water
+Agriculture
+Settlement
+Mining
+Barren / Scrub
+Forest
+0
+2,000
+4,000
+LULC Class
+Area (km²)
+class_name	CNN-15	CNN-9	Random Forest
+Water	171.671	148.498	118.505
+Agriculture	3,589.65	3,583.421	3,818.456
+Settlement	398.897	382.136	397.865
+Mining	43.421	37.295	27.029
+Barren / Scrub	279.05	362.048	330.301
+Forest	1,303.724	1,273.014	1,094.256
+LULC Percentage Comparison (%)
+CNN-15
+CNN-9
+Random Forest
+Water
+Agriculture
+Settlement
+Mining
+Barren / Scrub
+Forest
+0
+25
+50
+75
+LULC Class
+Percentage (%)
+class_name	CNN-15	CNN-9	Random Forest
+Water	2.967	2.566	2.048
+Agriculture	62.036	61.928	65.99
+Settlement	6.894	6.604	6.876
+Mining	0.75	0.645	0.467
+Barren / Scrub	4.823	6.257	5.708
+Forest	22.531	22	18.911
+Analysis Completed
+LULC Legend
+Water
+Agriculture
+Settlement
+Mining
+Barren / Scrub
+Forest
+Imports generated code
 var boundary = ee.FeatureCollection("projects/onyx-seeker-461009-i4/assets/gadm40_IND_2"),
     Mining = 
     /* color: #85491b */
@@ -1790,23 +1882,18 @@ var boundary = ee.FeatureCollection("projects/onyx-seeker-461009-i4/assets/gadm4
             {
               "system:index": "17"
             })]),
-    image3 = ee.Image("projects/onyx-seeker-461009-i4/assets/Singrauli_CNN_Classified_Map_FINAL"),
     cnn_15 = ee.Image("projects/onyx-seeker-461009-i4/assets/Singrauli_CNN_CENTER_PIXEL_15"),
-    cnn_9 = ee.Image("projects/onyx-seeker-461009-i4/assets/Singrauli_CNN_CENTER_PIXEL_9");
+    cnn_9 = ee.Image("projects/onyx-seeker-461009-i4/assets/Singrauli_CNN_CENTER_PIXEL_9"),
+    rf = ee.Image("projects/onyx-seeker-461009-i4/assets/Singrauli_LULC_RF_Sentinel2_2024");
 
-// ====================================================================================
-// CNN COMPARISON VISUALIZATION WITH CLASS‑WISE AREA & PERCENTAGE
-// (cnn_15 vs cnn_9)
-// ====================================================================================
 
-// ✅ LULC PALETTE (UNCHANGED)
 var lulcPalette = [
-  '0000FF', // 1 Water
-  'E6E600', // 2 Agriculture
-  'FF0000', // 3 Settlement
-  '000000', // 4 Mining
-  'C2B280', // 5 Barren
-  '006400'  // 6 Forest
+  '0000FF',
+  'E6E600',
+  'FF0000',
+  '000000',
+  'C2B280',
+  '006400'
 ];
 
 var lulcVis = {
@@ -1815,9 +1902,19 @@ var lulcVis = {
   palette: lulcPalette
 };
 
-// ====================================================================================
-// AOI
-// ====================================================================================
+var NATIVE_SCALE = 10;
+var NATIVE_CRS = 'EPSG:32644';
+
+var classNames = ee.Dictionary({
+  '1': 'Water',
+  '2': 'Agriculture',
+  '3': 'Settlement',
+  '4': 'Mining',
+  '5': 'Barren / Scrub',
+  '6': 'Forest'
+});
+
+var classNamesList = ['Water', 'Agriculture', 'Settlement', 'Mining', 'Barren / Scrub', 'Forest'];
 
 var aoi = boundary.filter(
   ee.Filter.and(
@@ -1826,39 +1923,81 @@ var aoi = boundary.filter(
   )
 );
 
+var aoiGeometry = aoi.geometry();
+
 Map.centerObject(aoi, 10);
-Map.addLayer(aoi, {color: 'red'}, 'AOI');
+Map.addLayer(aoi, {color: 'red'}, 'AOI Boundary');
 
-// ====================================================================================
-// ✅ CNN CLASS CORRECTION FUNCTION
-// ====================================================================================
+var totalAreaKm2 = aoiGeometry.area().divide(1e6);
 
-function correctCNN(image) {
-  return image
-    .clip(aoi)
-    .remap(
-      [0, 1, 2, 3, 4, 5],
-      [6, 1, 2, 3, 4, 5]
-    )
-    .rename('lulc');
-}
+print('LULC MODEL COMPARISON - Singrauli District');
+print('Total Study Area:', totalAreaKm2, 'km²');
 
-// Apply correction
-var cnn15 = correctCNN(cnn_15);
-var cnn9  = correctCNN(cnn_9);
+var cnn15_raw = cnn_15
+  .clip(aoi)
+  .remap([0, 1, 2, 3, 4, 5], [6, 1, 2, 3, 4, 5])
+  .toInt()
+  .rename('lulc');
 
-// Visualize both
-Map.addLayer(cnn15, lulcVis, 'LULC CNN‑15');
-Map.addLayer(cnn9,  lulcVis, 'LULC CNN‑9');
+var cnn9_raw = cnn_9
+  .clip(aoi)
+  .remap([0, 1, 2, 3, 4, 5], [6, 1, 2, 3, 4, 5])
+  .toInt()
+  .rename('lulc');
 
-// ====================================================================================
-// ✅ CLASS‑WISE AREA FUNCTION (km²)
-// ====================================================================================
+var rf_raw = rf
+  .clip(aoi)
+  .toInt()
+  .rename('lulc');
+
+var mask_cnn15 = cnn15_raw.mask();
+var mask_cnn9 = cnn9_raw.mask();
+var mask_rf = rf_raw.mask();
+
+var commonMask = mask_cnn15.and(mask_cnn9).and(mask_rf);
+
+var lulc_cnn15 = cnn15_raw.updateMask(commonMask);
+var lulc_cnn9 = cnn9_raw.updateMask(commonMask);
+var lulc_rf = rf_raw.updateMask(commonMask);
 
 var pixelAreaKm2 = ee.Image.pixelArea().divide(1e6);
 
-function computeArea(image, modelName) {
+var commonAnalysisArea = pixelAreaKm2.updateMask(commonMask).reduceRegion({
+  reducer: ee.Reducer.sum(),
+  geometry: aoiGeometry,
+  scale: NATIVE_SCALE,
+  maxPixels: 1e13,
+  tileScale: 4
+});
 
+print('Common Analysis Area:', commonAnalysisArea.get('area'), 'km²');
+
+var lulc_cnn15_display = lulc_cnn15
+  .reproject({crs: NATIVE_CRS, scale: NATIVE_SCALE})
+  .reduceResolution({
+    reducer: ee.Reducer.mode(),
+    maxPixels: 1024
+  });
+
+var lulc_cnn9_display = lulc_cnn9
+  .reproject({crs: NATIVE_CRS, scale: NATIVE_SCALE})
+  .reduceResolution({
+    reducer: ee.Reducer.mode(),
+    maxPixels: 1024
+  });
+
+var lulc_rf_display = lulc_rf
+  .reproject({crs: NATIVE_CRS, scale: NATIVE_SCALE})
+  .reduceResolution({
+    reducer: ee.Reducer.mode(),
+    maxPixels: 1024
+  });
+
+Map.addLayer(lulc_cnn15_display, lulcVis, 'LULC - CNN-15', true);
+Map.addLayer(lulc_cnn9_display, lulcVis, 'LULC - CNN-9', false);
+Map.addLayer(lulc_rf_display, lulcVis, 'LULC - Random Forest', false);
+
+function computeClassAreas(image, modelName) {
   var areaImage = pixelAreaKm2.addBands(image);
 
   var stats = areaImage.reduceRegion({
@@ -1866,29 +2005,23 @@ function computeArea(image, modelName) {
       groupField: 1,
       groupName: 'class'
     }),
-    geometry: aoi,
-    scale: 10,
-    maxPixels: 1e13
+    geometry: aoiGeometry,
+    scale: NATIVE_SCALE,
+    maxPixels: 1e13,
+    tileScale: 4
   });
 
-  var classNames = ee.Dictionary({
-    1: 'Water',
-    2: 'Agriculture',
-    3: 'Settlement',
-    4: 'Mining',
-    5: 'Barren / Scrub',
-    6: 'Forest'
-  });
-
+  var groups = ee.List(stats.get('groups'));
+  
   var fc = ee.FeatureCollection(
-    ee.List(stats.get('groups')).map(function(item) {
+    groups.map(function(item) {
       item = ee.Dictionary(item);
-
-      var classId = ee.Number(item.get('class'));
+      var classId = ee.Number(item.get('class')).toInt();
       var area = ee.Number(item.get('sum'));
 
       return ee.Feature(null, {
         model: modelName,
+        class_id: classId,
         class_name: classNames.get(classId.format()),
         area_km2: area
       });
@@ -1898,33 +2031,30 @@ function computeArea(image, modelName) {
   var totalArea = fc.aggregate_sum('area_km2');
 
   return fc.map(function(f) {
-    var percent = ee.Number(f.get('area_km2'))
-      .divide(totalArea)
-      .multiply(100);
-    return f.set('percentage', percent);
+    var area = ee.Number(f.get('area_km2'));
+    var percent = area.divide(totalArea).multiply(100);
+    return f.set({
+      'percentage': percent,
+      'total_area_km2': totalArea
+    });
   });
 }
 
-// Compute areas
-var areaCNN15 = computeArea(cnn15, 'CNN‑15');
-var areaCNN9  = computeArea(cnn9,  'CNN‑9');
+var areaCNN15 = computeClassAreas(lulc_cnn15, 'CNN-15');
+var areaCNN9 = computeClassAreas(lulc_cnn9, 'CNN-9');
+var areaRF = computeClassAreas(lulc_rf, 'Random Forest');
 
-// Merge collections
-var comparisonFC = areaCNN15.merge(areaCNN9);
+var comparisonFC = areaCNN15.merge(areaCNN9).merge(areaRF);
 
-// ====================================================================================
-// ✅ PRINT TABLE
-// ====================================================================================
+var totalCNN15 = areaCNN15.aggregate_sum('area_km2');
+var totalCNN9 = areaCNN9.aggregate_sum('area_km2');
+var totalRF = areaRF.aggregate_sum('area_km2');
 
-print('✅ CNN‑15 vs CNN‑9 | Class‑wise Area & Percentage',
-  comparisonFC.select([
-    'model', 'class_name', 'area_km2', 'percentage'
-  ])
-);
+print('CNN-15 Total Area:', totalCNN15, 'km²');
+print('CNN-9 Total Area:', totalCNN9, 'km²');
+print('Random Forest Total Area:', totalRF, 'km²');
 
-// ====================================================================================
-// ✅ COMPARATIVE BAR CHART – AREA
-// ====================================================================================
+print('Class-wise Comparison:', comparisonFC.select(['model', 'class_name', 'area_km2', 'percentage']));
 
 var areaChart = ui.Chart.feature.groups({
   features: comparisonFC,
@@ -1937,18 +2067,12 @@ var areaChart = ui.Chart.feature.groups({
   title: 'LULC Area Comparison (km²)',
   hAxis: {title: 'LULC Class'},
   vAxis: {title: 'Area (km²)'},
-  colors: ['#1f77b4', '#ff7f0e'],
-  annotations: {
-    alwaysOutside: true,
-    textStyle: {fontSize: 11}
-  }
+  colors: ['#1f77b4', '#ff7f0e', '#2ca02c'],
+  bar: {groupWidth: '75%'},
+  legend: {position: 'top'}
 });
 
 print(areaChart);
-
-// ====================================================================================
-// ✅ COMPARATIVE BAR CHART – PERCENTAGE
-// ====================================================================================
 
 var percentChart = ui.Chart.feature.groups({
   features: comparisonFC,
@@ -1961,52 +2085,42 @@ var percentChart = ui.Chart.feature.groups({
   title: 'LULC Percentage Comparison (%)',
   hAxis: {title: 'LULC Class'},
   vAxis: {title: 'Percentage (%)'},
-  colors: ['#1f77b4', '#ff7f0e'],
-  annotations: {
-    alwaysOutside: true,
-    textStyle: {fontSize: 11}
-  }
+  colors: ['#1f77b4', '#ff7f0e', '#2ca02c'],
+  bar: {groupWidth: '75%'},
+  legend: {position: 'top'}
 });
 
 print(percentChart);
-
-// ====================================================================================
-// ✅ LEGEND (UNCHANGED)
-// ====================================================================================
 
 var legend = ui.Panel({
   style: {
     position: 'bottom-left',
     padding: '8px',
+    backgroundColor: 'white',
     border: '1px solid #ccc'
   }
 });
 
 legend.add(ui.Label({
-  value: 'LULC Legend (CNN)',
-  style: {fontWeight: 'bold', fontSize: '16px'}
+  value: 'LULC Legend',
+  style: {fontWeight: 'bold', fontSize: '14px', margin: '0 0 6px 0'}
 }));
 
-var names = [
-  'Water',
-  'Agriculture',
-  'Settlement',
-  'Mining',
-  'Barren / Scrub',
-  'Forest'
-];
-
-for (var i = 0; i < names.length; i++) {
+for (var i = 0; i < classNamesList.length; i++) {
   legend.add(ui.Panel({
     widgets: [
       ui.Label({
         style: {
           backgroundColor: '#' + lulcPalette[i],
           padding: '8px',
-          margin: '0 4px 4px 0'
+          margin: '0 6px 4px 0',
+          border: '1px solid #666'
         }
       }),
-      ui.Label(names[i])
+      ui.Label({
+        value: classNamesList[i],
+        style: {margin: '2px 0'}
+      })
     ],
     layout: ui.Panel.Layout.Flow('horizontal')
   }));
@@ -2014,6 +2128,4 @@ for (var i = 0; i < names.length; i++) {
 
 ui.root.add(legend);
 
-// ====================================================================================
-
-print('✅ CNN‑15 vs CNN‑9 LULC COMPARISON COMPLETED');
+print('Analysis Completed');
