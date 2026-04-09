@@ -20,7 +20,7 @@ Where:
 - $\text{Red}$ is the visible Red reflectance (Band 4 in Sentinel-2).
 
 ### Spatial Coordinate Transformation
-To extract a patch for our CNN, we must map real-world geographical coordinates (Longitude/Latitude) to array indices in the GeoTIFF matrix. Let $(lon, lat)$ be a coordinate in the EPSG:4326 coordinate reference system.
+To extract a patch for our CNN, we must map real-world geographical coordinates (Longitude/Latitude) to array indices in the GeoTIFF matrix. Let $(lon, lat)$ be a coordinate that strictly matches the Coordinate Reference System (CRS) of the target GeoTIFF (for example, a Sentinel-2 projected CRS). If the CSV points are in EPSG:4326 (standard lat/lon), they must first be reprojected to match the raster's CRS before extraction to ensure accurate indexing.
 
 The affine transformation matrix $A$ defines the relationship between pixel coordinates $(col, row)$ and spatial coordinates:
 
@@ -84,7 +84,7 @@ The `Data_Extraction.ipynb` script is the heart of this chapter. Here is how the
 4. **Vectorized Extraction:**
    - Loop through the coordinates. For every point, use `rasterio.index(lon, lat)` to perform the mathematical inverse affine transformation described above.
    - Slice the NumPy array to grab a $9 \times 9$ or $15 \times 15$ pixel region across all 11 spectral bands.
-5. **Quality Assurance:** If a coordinate falls too close to the edge of the image (meaning a full $9 \times 9$ patch cannot be formed), it is discarded to prevent out-of-bounds errors.
+5. **Quality Assurance:** The extraction loop uses a `try/except` block to gracefully handle edge cases. If a coordinate falls too close to the edge of the image (meaning a full $9 \times 9$ patch cannot be formed) or any other data anomaly occurs during slicing, the exception is caught and the point is bypassed. Monitoring the count of these skipped points is highly recommended to diagnose underlying data alignment issues.
 6. **Serialization:** The resulting array of patches (Shape: `[Num_Samples, N, N, 11]`) and their corresponding labels (Shape: `[Num_Samples]`) are saved as compressed NumPy archives (`.npz`).
 
 ## 4. Visual Representations: Data Flow State Diagram

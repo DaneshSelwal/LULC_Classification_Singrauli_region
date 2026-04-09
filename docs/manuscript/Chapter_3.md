@@ -10,7 +10,7 @@ Why use two different engines?
 ## 2. Mathematical Foundations
 
 ### The Random Forest (RF) Engine
-Random Forest is an ensemble of Decision Trees. Each tree partitions the feature space (the 11 spectral bands) using rules that maximize information gain.
+Random Forest is an ensemble of Decision Trees. Each tree partitions the feature space (specific spectral bands like B2, B3, B4, B8, B11, B12, along with calculated indices like NDVI, NDWI, NDBI, and texture) using rules that maximize information gain.
 
 The split at a node is determined by minimizing Impurity, often measured by Gini Impurity or Entropy. Let $p_c$ be the proportion of training pixels belonging to class $c$ in a given node. The Entropy $H$ is:
 $$ H = - \sum_{c \in \mathcal{C}} p_c \log_2(p_c) $$
@@ -55,6 +55,8 @@ Where $y_{i,c}$ is 1 if the true class of sample $i$ is $c$, and 0 otherwise.
 5. **Inference (Prediction):** Iterate over the base GeoTIFF row-by-row, extract patches on-the-fly, and use `model.predict()` to assign a class to every pixel, generating a new `.tif` file.
 
 ## 4. Visual Representations: CNN Architecture
+
+*Note: The diagram below illustrates the $9 \times 9$ architecture. The $15 \times 15$ architecture follows the same sequential logic, but starts with a $15 \times 15 \times 11$ input patch and maintains a correspondingly larger spatial dimension through the convolutional layers before flattening.*
 
 ```mermaid
 graph TD

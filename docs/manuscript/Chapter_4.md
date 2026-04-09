@@ -38,7 +38,7 @@ The evaluation logic resides primarily in `Accuracy Assessment and Visualisation
 1. **Prediction Ingestion:** The final classified GeoTIFFs (RF, CNN-9, CNN-15) are loaded.
 2. **Reference Data Alignment:** A `.csv` containing validation points (`reference_data.csv`) is loaded.
 3. **Point Extraction:** For every validation point $(lon, lat)$, the predicted class is extracted from the GeoTIFF array.
-4. **Metric Calculation:** `sklearn.metrics.confusion_matrix` and `classification_report` are utilized to compute the mathematical metrics defined above.
+4. **Metric Calculation:** Functions such as `sklearn.metrics.confusion_matrix` and `sklearn.metrics.cohen_kappa_score` are utilized to directly compute the mathematical metrics defined above.
 5. **Report Generation:** A comprehensive document (`model_accuracy_report.docx`) is synthesized, summarizing the performance.
 
 ## 4. Visual Representations & Output Analysis
